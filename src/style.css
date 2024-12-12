@@ -355,3 +355,24 @@
     opacity: 1;
   }
 }
+
+/* Add styles for the delete tab button */
+.delete-tab-btn {
+  padding: 4px 8px;
+  background-color: #dc3545; /* Red background for delete button */
+  color: white;
+  border: none;
+  border-radius: 50%; /* Make it circular */
+  cursor: pointer;
+  margin-left: 10px; /* Space between tab button and delete button */
+  font-size: 16px; /* Adjust size as needed */
+  width: 30px; /* Fixed width for circular button */
+  height: 30px; /* Fixed height for circular button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-tab-btn:hover {
+  background-color: #c82333; /* Darker red on hover */
+}

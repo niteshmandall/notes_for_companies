@@ -53,6 +53,13 @@ const API = {
       method: 'DELETE'
     });
     return response.json();
+  },
+
+  async deleteTab(id) {
+    const response = await fetch(`http://localhost:3000/api/tabs/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
   }
 };
 
@@ -95,6 +102,7 @@ function renderTabs(tabs) {
       <button class="tab-button ${index === 0 ? 'active' : ''}" data-tab-id="${tab.id}">
         ${tab.name}
       </button>
+      <span class="delete-tab-icon" data-tab-id="${tab.id}">🗑️</span>
     `;
     tabList.appendChild(tabItem);
   });
@@ -108,6 +116,18 @@ function renderTabs(tabs) {
       const tabId = button.getAttribute('data-tab-id');
       const notes = await API.getNotes(tabId);
       renderNotes(tabId, notes);
+    });
+  });
+
+  // Add click listeners for delete icons
+  document.querySelectorAll('.delete-tab-icon').forEach(icon => {
+    icon.addEventListener('click', async () => {
+      const tabId = icon.getAttribute('data-tab-id');
+      if (confirm('Are you sure you want to delete this tab?')) {
+        await API.deleteTab(tabId); // Call the delete API
+        const tabs = await API.getTabs(); // Refresh the tabs
+        renderTabs(tabs); // Re-render tabs
+      }
     });
   });
 }
