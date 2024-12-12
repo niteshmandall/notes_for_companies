@@ -150,6 +150,18 @@ app.delete('/api/notes/:id', (req, res) => {
   });
 });
 
+// Delete tab
+app.delete('/api/tabs/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM tabs WHERE id = ?', [id], (err) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ id });
+  });
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
