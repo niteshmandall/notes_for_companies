@@ -205,6 +205,50 @@ function setupNoteEventListeners(tabId) {
 
     titleInput.addEventListener('input', debouncedSave);
     contentArea.addEventListener('input', debouncedSave);
+
+    // Handle paste event for images
+    contentArea.addEventListener('paste', async (event) => {
+      const items = event.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const imgSrc = e.target.result;
+            const images = Array.from(noteElement.querySelectorAll('.pasted-image'))
+              .map(img => img.src);
+            images.push(imgSrc);
+            await API.updateNote(noteId, titleInput.value, contentArea.value, images);
+            renderNotes(tabId, await API.getNotes(tabId)); // Re-render notes to show the new image
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    });
+  });
+
+  // Add delete image functionality
+  document.querySelectorAll('.delete-image-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (confirm('Are you sure you want to delete this image?')) {
+        const noteElement = button.closest('.note');
+        const noteId = noteElement.dataset.noteId;
+        const titleInput = noteElement.querySelector('.note-title');
+        const contentArea = noteElement.querySelector('.note-area');
+        
+        // Remove the image container
+        const imageContainer = button.closest('.image-container');
+        imageContainer.remove();
+        
+        // Get remaining images
+        const remainingImages = Array.from(noteElement.querySelectorAll('.pasted-image'))
+          .map(img => img.src);
+        
+        // Update note with remaining images
+        await API.updateNote(noteId, titleInput.value, contentArea.value, remainingImages);
+      }
+    });
   });
 }
 
