@@ -85,16 +85,130 @@ async function initializeApp() {
 
 // Render functions
 function renderTabs(tabs) {
-  // ... implement tab rendering ...
+  const tabList = document.querySelector('.tab-list');
+  tabList.innerHTML = ''; // Clear existing tabs
+  
+  tabs.forEach((tab, index) => {
+    const tabItem = document.createElement('div');
+    tabItem.className = 'tab-item';
+    tabItem.innerHTML = `
+      <button class="tab-button ${index === 0 ? 'active' : ''}" data-tab-id="${tab.id}">
+        ${tab.name}
+      </button>
+    `;
+    tabList.appendChild(tabItem);
+  });
+
+  // Add click listeners to new tabs
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', async () => {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      const tabId = button.getAttribute('data-tab-id');
+      const notes = await API.getNotes(tabId);
+      renderNotes(tabId, notes);
+    });
+  });
 }
 
 function renderNotes(tabId, notes) {
-  // ... implement notes rendering ...
+  const mainContent = document.querySelector('.main-content');
+  mainContent.innerHTML = `
+    <div class="note-container active">
+      <div class="note-header">
+        <div class="header-title">
+          <h2>Notes</h2>
+          <button class="edit-tab-btn">✎</button>
+        </div>
+        <button class="add-note-btn" data-tab-id="${tabId}">+ Add Note</button>
+      </div>
+      <div class="notes-list">
+        ${notes.map(note => `
+          <div class="note" data-note-id="${note.id}">
+            <input type="text" class="note-title" value="${note.title || ''}" placeholder="Note title...">
+            <div class="note-content">
+              <textarea class="note-area" placeholder="Write your note here... You can also paste images!">${note.content || ''}</textarea>
+              ${renderImages(note.images)}
+            </div>
+            <button class="delete-note-btn">Delete</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  // Add event listeners for note actions
+  setupNoteEventListeners(tabId);
+}
+
+function renderImages(images) {
+  try {
+    // Handle cases where images is null, undefined, or empty string
+    if (!images) return '';
+    
+    // If images is already an array, use it directly
+    const imageArray = typeof images === 'string' ? JSON.parse(images) : images;
+    
+    // Ensure imageArray is actually an array
+    if (!Array.isArray(imageArray)) return '';
+    
+    return imageArray.map(image => `
+      <div class="image-container">
+        <img src="${image}" class="pasted-image" />
+        <button class="delete-image-btn">×</button>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Error parsing images:', error);
+    return ''; // Return empty string if there's an error
+  }
+}
+
+function setupNoteEventListeners(tabId) {
+  // Add note button
+  document.querySelector('.add-note-btn').addEventListener('click', async () => {
+    const newNote = await API.createNote(tabId, '', '', []);
+    const notes = await API.getNotes(tabId);
+    renderNotes(tabId, notes);
+  });
+
+  // Delete note buttons
+  document.querySelectorAll('.delete-note-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to delete this note?')) {
+        const noteId = button.closest('.note').dataset.noteId;
+        await API.deleteNote(noteId);
+        const notes = await API.getNotes(tabId);
+        renderNotes(tabId, notes);
+      }
+    });
+  });
+
+  // Auto-save on note changes
+  document.querySelectorAll('.note').forEach(noteElement => {
+    const noteId = noteElement.dataset.noteId;
+    const titleInput = noteElement.querySelector('.note-title');
+    const contentArea = noteElement.querySelector('.note-area');
+
+    let saveTimeout;
+    const saveNote = async () => {
+      const images = Array.from(noteElement.querySelectorAll('.pasted-image'))
+        .map(img => img.src);
+      await API.updateNote(noteId, titleInput.value, contentArea.value, images);
+    };
+
+    const debouncedSave = () => {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveNote, 1000); // Save after 1 second of no typing
+    };
+
+    titleInput.addEventListener('input', debouncedSave);
+    contentArea.addEventListener('input', debouncedSave);
+  });
 }
 
 // Initialize the app
-initializeApp();
-
 document.querySelector('#app').innerHTML = `
   <div class="container">
     <div class="sidebar">
@@ -104,262 +218,25 @@ document.querySelector('#app').innerHTML = `
           <button class="add-tab-btn">+ New Tab</button>
         </div>
         <div class="tab-list">
-          <div class="tab-item">
-            <button class="tab-button active" data-tab="tab1">Tab 1</button>
-          </div>
-          <div class="tab-item">
-            <button class="tab-button" data-tab="tab2">Tab 2</button>
-          </div>
-          <div class="tab-item">
-            <button class="tab-button" data-tab="tab3">Tab 3</button>
-          </div>
+          <!-- Tabs will be rendered here -->
         </div>
       </div>
     </div>
-
     <div class="main-content">
-      <div class="note-container active" id="tab1">
-        <div class="note-header">
-          <div class="header-title">
-            <h2>Tab 1 Notes</h2>
-            <button class="edit-tab-btn">✎</button>
-          </div>
-          <button class="add-note-btn">+ Add Note</button>
-        </div>
-        <div class="notes-list">
-          <div class="note">
-            <input type="text" class="note-title" placeholder="Note title...">
-            <div class="note-content">
-              <textarea class="note-area" placeholder="Write your note here... You can also paste images!"></textarea>
-            </div>
-            <button class="delete-note-btn">Delete</button>
-          </div>
-        </div>
-      </div>
-      <div class="note-container" id="tab2">
-        <div class="note-header">
-          <div class="header-title">
-            <h2>Tab 2 Notes</h2>
-            <button class="edit-tab-btn">✎</button>
-          </div>
-          <button class="add-note-btn">+ Add Note</button>
-        </div>
-        <div class="notes-list">
-          <div class="note">
-            <input type="text" class="note-title" placeholder="Note title...">
-            <div class="note-content">
-              <textarea class="note-area" placeholder="Write your note here... You can also paste images!"></textarea>
-            </div>
-            <button class="delete-note-btn">Delete</button>
-          </div>
-        </div>
-      </div>
-      <div class="note-container" id="tab3">
-        <div class="note-header">
-          <div class="header-title">
-            <h2>Tab 3 Notes</h2>
-            <button class="edit-tab-btn">✎</button>
-          </div>
-          <button class="add-note-btn">+ Add Note</button>
-        </div>
-        <div class="notes-list">
-          <div class="note">
-            <input type="text" class="note-title" placeholder="Note title...">
-            <div class="note-content">
-              <textarea class="note-area" placeholder="Write your note here... You can also paste images!"></textarea>
-            </div>
-            <button class="delete-note-btn">Delete</button>
-          </div>
-        </div>
-      </div>
+      <!-- Notes will be rendered here -->
     </div>
   </div>
-`
+`;
 
-// Tab switching functionality
-const tabButtons = document.querySelectorAll('.tab-button');
-const noteContainers = document.querySelectorAll('.note-container');
-
-tabButtons.forEach(button => {
-  button.addEventListener('click', () => {
-    tabButtons.forEach(btn => btn.classList.remove('active'));
-    noteContainers.forEach(container => container.classList.remove('active'));
-    
-    button.classList.add('active');
-    const tabId = button.getAttribute('data-tab');
-    document.getElementById(tabId).classList.add('active');
-  });
-});
-
-// Edit tab name functionality
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('edit-tab-btn')) {
-    const noteContainer = e.target.closest('.note-container');
-    const header = noteContainer.querySelector('h2');
-    const tabId = noteContainer.id;
-    const currentName = header.textContent.replace(' Notes', '');
-    const newName = prompt('Enter new tab name:', currentName);
-    
-    if (newName && newName.trim() !== '') {
-      header.textContent = `${newName} Notes`;
-      // Update corresponding tab in sidebar
-      const sidebarTab = document.querySelector(`[data-tab="${tabId}"]`);
-      sidebarTab.textContent = newName;
-    }
+// Add new tab button functionality
+document.querySelector('.add-tab-btn').addEventListener('click', async () => {
+  const newTabName = prompt('Enter tab name:');
+  if (newTabName && newTabName.trim()) {
+    await API.createTab(newTabName.trim());
+    const tabs = await API.getTabs();
+    renderTabs(tabs);
   }
 });
 
-// Add new tab functionality
-let tabCounter = 4;
-document.querySelector('.add-tab-btn').addEventListener('click', () => {
-  const tabList = document.querySelector('.tab-list');
-  const mainContent = document.querySelector('.main-content');
-  const newTabId = `tab${tabCounter}`;
-  
-  // Create new tab button
-  const tabItem = document.createElement('div');
-  tabItem.className = 'tab-item';
-  tabItem.innerHTML = `
-    <button class="tab-button" data-tab="${newTabId}">Tab ${tabCounter}</button>
-  `;
-  
-  // Create new note container
-  const noteContainer = document.createElement('div');
-  noteContainer.className = 'note-container';
-  noteContainer.id = newTabId;
-  noteContainer.innerHTML = `
-    <div class="note-header">
-      <div class="header-title">
-        <h2>Tab ${tabCounter} Notes</h2>
-        <button class="edit-tab-btn">✎</button>
-      </div>
-      <button class="add-note-btn">+ Add Note</button>
-    </div>
-    <div class="notes-list">
-      <div class="note">
-        <input type="text" class="note-title" placeholder="Note title...">
-        <div class="note-content">
-          <textarea class="note-area" placeholder="Write your note here... You can also paste images!"></textarea>
-        </div>
-        <button class="delete-note-btn">Delete</button>
-      </div>
-    </div>
-  `;
-  
-  tabList.appendChild(tabItem);
-  mainContent.appendChild(noteContainer);
-  
-  // Update tab switching functionality for new tab
-  const newTabButton = tabItem.querySelector('.tab-button');
-  newTabButton.addEventListener('click', () => {
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.note-container').forEach(container => container.classList.remove('active'));
-    
-    newTabButton.classList.add('active');
-    noteContainer.classList.add('active');
-  });
-  
-  tabCounter++;
-});
-
-// Add note functionality
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('add-note-btn')) {
-    const notesList = e.target.closest('.note-container').querySelector('.notes-list');
-    const newNote = document.createElement('div');
-    newNote.className = 'note';
-    newNote.innerHTML = `
-      <input type="text" class="note-title" placeholder="Note title...">
-      <div class="note-content">
-        <textarea class="note-area" placeholder="Write your note here... You can also paste images!"></textarea>
-      </div>
-      <button class="delete-note-btn">Delete</button>
-    `;
-    notesList.appendChild(newNote);
-  }
-});
-
-// Delete note functionality with confirmation
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('delete-note-btn')) {
-    const confirmDelete = confirm('Are you sure you want to delete this note?');
-    if (confirmDelete) {
-      e.target.closest('.note').remove();
-    }
-  }
-});
-
-// Add modal HTML to the document
-document.body.insertAdjacentHTML('beforeend', `
-  <div class="image-modal" id="imageModal">
-    <span class="close-modal">&times;</span>
-    <img class="modal-content" id="modalImage">
-  </div>
-`);
-
-// Update paste event listener to add click functionality to images
-document.addEventListener('paste', (e) => {
-  const target = e.target;
-  if (target.classList.contains('note-area')) {
-    const items = e.clipboardData.items;
-
-    for (let item of items) {
-      if (item.type.indexOf('image') !== -1) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        const reader = new FileReader();
-        
-        reader.onload = function(event) {
-          const img = document.createElement('img');
-          img.src = event.target.result;
-          img.className = 'pasted-image';
-          // Add click event for image preview
-          img.onclick = function() {
-            const modal = document.getElementById('imageModal');
-            const modalImg = document.getElementById('modalImage');
-            modal.style.display = "block";
-            modalImg.src = this.src;
-          };
-          
-          const imageContainer = document.createElement('div');
-          imageContainer.className = 'image-container';
-          
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'delete-image-btn';
-          deleteBtn.innerHTML = '×';
-          deleteBtn.onclick = function(e) {
-            e.stopPropagation(); // Prevent modal from opening when clicking delete
-            if (confirm('Are you sure you want to delete this image?')) {
-              imageContainer.remove();
-            }
-          };
-          
-          imageContainer.appendChild(img);
-          imageContainer.appendChild(deleteBtn);
-          target.parentNode.insertBefore(imageContainer, target);
-        };
-        
-        reader.readAsDataURL(file);
-      }
-    }
-  }
-});
-
-// Close modal when clicking the × button
-document.querySelector('.close-modal').onclick = function() {
-  document.getElementById('imageModal').style.display = "none";
-};
-
-// Close modal when clicking outside the image
-document.getElementById('imageModal').onclick = function(e) {
-  if (e.target === this) {
-    this.style.display = "none";
-  }
-};
-
-// Close modal with escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    document.getElementById('imageModal').style.display = "none";
-  }
-});
+// Initialize the app
+initializeApp();
