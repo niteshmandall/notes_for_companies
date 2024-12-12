@@ -128,8 +128,10 @@ function renderNotes(tabId, notes) {
           <div class="note" data-note-id="${note.id}">
             <input type="text" class="note-title" value="${note.title || ''}" placeholder="Note title...">
             <div class="note-content">
+              <div class="images-container">
+                ${renderImages(note.images)}
+              </div>
               <textarea class="note-area" placeholder="Write your note here... You can also paste images!">${note.content || ''}</textarea>
-              ${renderImages(note.images)}
             </div>
             <button class="delete-note-btn">Delete</button>
           </div>
@@ -144,24 +146,20 @@ function renderNotes(tabId, notes) {
 
 function renderImages(images) {
   try {
-    // Handle cases where images is null, undefined, or empty string
     if (!images) return '';
-    
-    // If images is already an array, use it directly
     const imageArray = typeof images === 'string' ? JSON.parse(images) : images;
-    
-    // Ensure imageArray is actually an array
     if (!Array.isArray(imageArray)) return '';
     
     return imageArray.map(image => `
       <div class="image-container">
         <img src="${image}" class="pasted-image" />
+        <div class="resize-handle"></div>
         <button class="delete-image-btn">×</button>
       </div>
     `).join('');
   } catch (error) {
     console.error('Error parsing images:', error);
-    return ''; // Return empty string if there's an error
+    return '';
   }
 }
 
@@ -249,6 +247,42 @@ function setupNoteEventListeners(tabId) {
         await API.updateNote(noteId, titleInput.value, contentArea.value, remainingImages);
       }
     });
+  });
+
+  // Add image resize functionality
+  document.querySelectorAll('.image-container').forEach(container => {
+    const img = container.querySelector('.pasted-image');
+    const handle = container.querySelector('.resize-handle');
+    let isResizing = false;
+    let startWidth;
+    let startX;
+
+    handle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startWidth = img.offsetWidth;
+      startX = e.clientX;
+      
+      // Add temporary event listeners
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      // Prevent text selection while resizing
+      e.preventDefault();
+    });
+
+    function handleMouseMove(e) {
+      if (!isResizing) return;
+      
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
+      img.style.width = `${newWidth}px`;
+    }
+
+    function handleMouseUp() {
+      isResizing = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
   });
 }
 

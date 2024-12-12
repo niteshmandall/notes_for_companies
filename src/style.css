@@ -114,6 +114,7 @@
   resize: vertical;
   font-family: inherit;
   line-height: 1.5;
+  margin-top: 10px;
 }
 
 .note-area:focus {
@@ -195,17 +196,54 @@
   gap: 10px;
 }
 
+.images-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .image-container {
   position: relative;
-  margin: 10px 0;
   max-width: 100%;
+  display: inline-block;
+  cursor: default;
 }
 
 .pasted-image {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
   display: block;
+  resize: both;
+  border-radius: 4px;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: se-resize;
+  border-radius: 0 0 4px 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid white;
+  border-bottom: 2px solid white;
+}
+
+.image-container:hover .resize-handle {
+  opacity: 1;
 }
 
 .delete-image-btn {
@@ -226,6 +264,7 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s;
+  z-index: 2;
 }
 
 .image-container:hover .delete-image-btn {
