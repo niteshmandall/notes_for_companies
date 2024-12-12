@@ -101,8 +101,9 @@ function renderTabs(tabs) {
     tabItem.innerHTML = `
       <button class="tab-button ${index === 0 ? 'active' : ''}" data-tab-id="${tab.id}">
         ${tab.name}
+        <button class="delete-tab-btn" data-tab-id="${tab.id}">✖</button>
       </button>
-      <span class="delete-tab-icon" data-tab-id="${tab.id}">🗑️</span>
+      <div class="resize-handle" data-tab-id="${tab.id}"></div>
     `;
     tabList.appendChild(tabItem);
   });
@@ -119,15 +120,38 @@ function renderTabs(tabs) {
     });
   });
 
-  // Add click listeners for delete icons
-  document.querySelectorAll('.delete-tab-icon').forEach(icon => {
-    icon.addEventListener('click', async () => {
-      const tabId = icon.getAttribute('data-tab-id');
+  // Add click listeners for delete buttons
+  document.querySelectorAll('.delete-tab-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tabId = button.getAttribute('data-tab-id');
       if (confirm('Are you sure you want to delete this tab?')) {
         await API.deleteTab(tabId); // Call the delete API
         const tabs = await API.getTabs(); // Refresh the tabs
         renderTabs(tabs); // Re-render tabs
       }
+    });
+  });
+
+  // Add drag functionality for resizing tabs
+  document.querySelectorAll('.resize-handle').forEach(handle => {
+    handle.addEventListener('mousedown', (e) => {
+      const tabItem = handle.parentElement; // Get the parent tab item
+      const startX = e.clientX; // Get the initial mouse position
+      const startWidth = tabItem.offsetWidth; // Get the initial width of the tab item
+
+      const onMouseMove = (e) => {
+        const newWidth = Math.max(100, startWidth + (e.clientX - startX)); // Minimum width of 100px
+        tabItem.style.width = `${newWidth}px`; // Set the new width
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove); // Remove mousemove listener
+        document.removeEventListener('mouseup', onMouseUp); // Remove mouseup listener
+      };
+
+      document.addEventListener('mousemove', onMouseMove); // Add mousemove listener
+      document.addEventListener('mouseup', onMouseUp); // Add mouseup listener
     });
   });
 }

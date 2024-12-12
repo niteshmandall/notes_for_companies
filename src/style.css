@@ -9,7 +9,7 @@ body {
 }
 
 .sidebar {
-  width: 300px;
+  width: 200px;
   background-color: #1e1e1e;
   border-right: 1px solid #333;
   padding: 20px;
@@ -392,8 +392,8 @@ body {
 
 .delete-tab-icon {
   cursor: pointer;
-  margin-left: 10px;
-  font-size: 18px;
+  margin-left: 1px;
+  font-size: 15px;
   color: #dc3545;
 }
 
