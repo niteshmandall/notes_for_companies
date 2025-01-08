@@ -8,9 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:all": "concurrently \"npm run dev\" \"node server/index.js\""
-    
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "vite": "^6.0.1"
   },
   "main": "index.js",
