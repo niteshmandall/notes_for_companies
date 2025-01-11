@@ -27,7 +27,7 @@ A simple notes application built with Express.js for the backend and vanilla Jav
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/notes-app.git
+   git clone https://github.com/niteshmandall/notes-app.git
    cd notes-app
    ```
 
