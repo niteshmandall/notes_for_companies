@@ -9,6 +9,8 @@ dotenv.config();
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased limit for image handling
 
+
+// test001
 // MySQL connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST, // Update this line
