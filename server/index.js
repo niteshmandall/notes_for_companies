@@ -2,6 +2,8 @@ import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
 const app = express();
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Middleware
 app.use(cors());
@@ -9,10 +11,11 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for image handling
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'root',
-  database: 'notes_app'
+  host: process.env.DB_HOST, // Update this line
+  port: process.env.DB_PORT, // Update this line
+  user: process.env.DB_USER, // Update this line
+  password: process.env.DB_PASSWORD, // Update this line
+  database: process.env.DB_NAME // Update this line
 });
 
 db.connect((err) => {
